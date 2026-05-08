@@ -1,5 +1,5 @@
 from .BaseDataModel import BaseDataModel
-from .db_schemes.project import Project  # تأكد إن الـ Import بيشاور على الكلاس نفسه
+from .db_schemes import Project 
 from .enums.DataBaseEnums import DataBaseEnums
 
 class ProjectModel(BaseDataModel):
@@ -10,7 +10,7 @@ class ProjectModel(BaseDataModel):
 
     async def create_project(self, project_obj: Project):
         # بنستخدم by_alias=True عشان يحول id لـ _id للمونجو
-        project_dict = project_obj.model_dump(by_alias=True, exclude_none=True)
+        project_dict = project_obj.model_dump(by_alias=True, exclude_unset=True)
         result = await self.collection.insert_one(project_dict)
         project_obj.id = result.inserted_id
         return project_obj 

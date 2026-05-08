@@ -8,6 +8,8 @@ from models import ResponseSignal
 import logging
 from .schemes.data import ProcessingRequest
 from models.ProjectModel import ProjectModel 
+from models.db_schemes import DataChunk
+from models.ChunkModel import ChunkModel
 
 logger = logging.getLogger('uvicorn.error')
 
@@ -56,12 +58,17 @@ async def upload_data(request:Request,project_id:str,file:UploadFile,
         }) 
 
 @data_router.post("/process/{project_id}")
-async def process_endpoint(project_id: str,processing_request: ProcessingRequest,):
+async def process_endpoint(project_id: str,processing_request: ProcessingRequest,request:Request):
     file_id=processing_request.file_id
     chunk_size=processing_request.chunk_size
     overlap_size=processing_request.overlap_size
+    do_reset=processing_request.do_reset
     
-     
+    project_model=ProjectModel(
+        db_client=request.app.db_client
+    )
+    project = await project_model.get_project_or_create_one(project_id=project_id)
+
     precess_controller= ProcessController(project_id=project_id)
     file_content=precess_controller.get_file_content(file_id=file_id)
     file_chunks=precess_controller.process_file_content(
@@ -74,4 +81,27 @@ async def process_endpoint(project_id: str,processing_request: ProcessingRequest
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"is_valid":False , "result_signal":ResponseSignal.PROCESSING_FAILED.value})
     
-    return file_chunks
+    file_chunks_record=[
+        DataChunk(
+            chunk_text=chunk.page_content,
+            chunk_metadata=chunk.metadata,
+            chunk_order=i+1,
+            chunk_project_id=project.id
+        ) for i, chunk in enumerate(file_chunks) 
+    ] 
+
+    chunk_model=ChunkModel( 
+        db_client=request.app.db_client
+    )
+
+    if do_reset==1:
+        _ = await chunk_model.delete_chunks_by_project_id(project_id=project.id)
+
+    
+    no_records = await chunk_model.create_multiple_chunks(chunks=file_chunks_record)
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"is_valid":True , "result_signal":ResponseSignal.PROCESSING_SUCCESSFULLY.value,
+        "number":no_records
+        })
