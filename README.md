@@ -28,6 +28,20 @@ cp .env.example .env
 ```
 set your environment vartables in the .env file. Like `OPENAI_API_KEY` value.
 
+## RUN docker compose Services
+
+```bash
+cd docker 
+cp .env.example .env
+```
+
+```bash
+cd docker
+docker compose up -d
+```
+
+
+
 ## Run the server
 ```bash
 uvicorn main:app --reload --host [IP_ADDRESS] --port 5050
