@@ -4,14 +4,15 @@ from openai import OpenAI
 import logging
 
 class OpenAIProvider(LLMInterface):
+    
     def __init__(self, api_key: str, api_url: str = None,
-                 default_input_max_charachers: int=1000,
+                 default_input_max_characters: int=1000,
                  default_generation_max_output_tokens: int=1080,
                  default_generation_temperature: float=0.1,):
         self.api_key = api_key
         self.api_url = api_url
 
-        self.default_input_max_charachers = default_input_max_charachers
+        self.default_input_max_characters = default_input_max_characters
         self.default_generation_max_output_tokens = default_generation_max_output_tokens
         self.default_generation_temperature = default_generation_temperature
 
@@ -35,7 +36,7 @@ class OpenAIProvider(LLMInterface):
         self.embedding_size = embedding_size
 
     def process_text(self, text : str):
-        return text[:self.default_input_max_charachers].strip()
+        return text[:self.default_input_max_characters].strip()
  
         
     def generate_text(self , prompt : str , chat_history : list=[] , max_output_tokens : int = None ,temperature: float = None ,):
@@ -87,7 +88,7 @@ class OpenAIProvider(LLMInterface):
         
         return response.data[0].embedding
 
-    def constract_prompt(self, prompt: str, role: str):
+    def construct_prompt(self, prompt: str, role: str):
         return {
             "role":role,
             "content": self.process_text(prompt)
